@@ -239,6 +239,7 @@ PARAMETER USAGE (when tool is triggered):
             url.searchParams.set("polygon_geojson", "1");
 
             console.log("🔍 Searching:", searchQuery);
+            console.log("🌐 URL:", url.toString());
 
             const response = await fetch(url.toString(), {
               headers: {

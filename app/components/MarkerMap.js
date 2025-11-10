@@ -20,6 +20,9 @@ export default function MarkerMap({ locations = [] }) {
       zoom: 2,
     });
 
+    //https://tiles.openfreemap.org/styles/liberty
+    //https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json
+
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
@@ -38,30 +41,24 @@ export default function MarkerMap({ locations = [] }) {
         const el = document.createElement("div");
         el.className = "custom-marker";
         el.style.cssText = `
-          background-color: #3B82F6;
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          cursor: pointer;
-          transition: transform 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 12px;
-        `;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  position: relative;
+`;
+
         el.textContent = (idx + 1).toString();
-
-        el.addEventListener("mouseenter", () => {
-          el.style.transform = "scale(1.2)";
-        });
-
-        el.addEventListener("mouseleave", () => {
-          el.style.transform = "scale(1)";
-        });
 
         const addressParts = [];
         if (location.address) {
@@ -73,28 +70,34 @@ export default function MarkerMap({ locations = [] }) {
             addressParts.push(location.address.country);
         }
 
-        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
-          `<div style="padding: 10px; max-width: 250px;">
-            <h3 style="font-weight: bold; margin-bottom: 6px; font-size: 14px;">
-              ${location.name || location.display_name}
-            </h3>
-            <p style="font-size: 11px; color: #666; text-transform: capitalize; margin-bottom: 4px;">
-              ${location.class ? location.class + " • " : ""}${location.type}
-            </p>
-            ${
-              addressParts.length > 0
-                ? `<p style="font-size: 10px; color: #888; margin-top: 6px;">${addressParts.join(
-                    ", "
-                  )}</p>`
-                : ""
-            }
-            <p style="font-size: 10px; color: #999; margin-top: 4px;">
-              📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
-            </p>
-          </div>`
-        );
+        const popup = new maplibregl.Popup({
+          offset: 25,
+          closeButton: false,
+        }).setHTML(`
+        <div class="p-3 max-w-[240px] bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-600/40 shadow-xl">
+          <h3 class="font-semibold text-white text-sm mb-1">
+            ${location.name || location.display_name}
+          </h3>
 
-        const marker = new maplibregl.Marker({ element: el })
+          <p class="text-[11px] text-slate-400 capitalize">
+            ${location.class ? location.class + " • " : ""}${location.type}
+          </p>
+
+          ${
+            addressParts.length > 0
+              ? `<p class="text-[10px] text-slate-500 mt-1">${addressParts.join(
+                  ", "
+                )}</p>`
+              : ""
+          }
+
+          <p class="text-[10px] text-slate-500 mt-2 font-mono">
+            📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
+          </p>
+        </div>
+        `);
+
+        const marker = new maplibregl.Marker({ element: el, draggable: false })
           .setLngLat([location.lng, location.lat])
           .setPopup(popup)
           .addTo(map.current);

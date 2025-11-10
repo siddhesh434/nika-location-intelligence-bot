@@ -63,3 +63,15 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #10b981 #0f172a; /* thumb color | track color */
 }
+
+/* Completely neutralize MapLibre popup wrapper */
+.maplibregl-popup-content {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-tip {
+  display: none !important; /* remove white arrow */
+}

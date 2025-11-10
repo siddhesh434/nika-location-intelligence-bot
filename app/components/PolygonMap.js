@@ -2,13 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 export default function PolygonMap({ locations = [] }) {
   const mapContainer = useRef(null);
   const map = useRef(null);
 
-  // Initialize map
   useEffect(() => {
     if (map.current) return;
 
@@ -19,12 +17,14 @@ export default function PolygonMap({ locations = [] }) {
       zoom: 2,
     });
 
+    //https://tiles.openfreemap.org/styles/liberty
+    //https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json
+
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
     map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
   }, []);
 
-  // Update polygon when locations change
   useEffect(() => {
     if (!map.current) return;
 
@@ -35,7 +35,6 @@ export default function PolygonMap({ locations = [] }) {
         const location = locations[0];
 
         if (!exists) {
-          // Create source once
           map.current.addSource("location-polygon", {
             type: "geojson",
             data: {
@@ -49,8 +48,8 @@ export default function PolygonMap({ locations = [] }) {
             type: "fill",
             source: "location-polygon",
             paint: {
-              "fill-color": "#088",
-              "fill-opacity": 0.6,
+              "fill-color": "#3B82F6",
+              "fill-opacity": 0.25,
             },
           });
 
@@ -59,26 +58,60 @@ export default function PolygonMap({ locations = [] }) {
             type: "line",
             source: "location-polygon",
             paint: {
-              "line-color": "#0066cc",
+              "line-color": "#60A5FA",
               "line-width": 2,
             },
           });
         } else {
-          // If source exists, update data only
           exists.setData({
             type: "Feature",
             geometry: location.polygon,
           });
         }
 
-        // Update marker + fit bounds
-        new maplibregl.Marker({ color: "#FF0000" })
+        /** ⬇️ NEW: identical popup style as MarkerMap */
+        const addressParts = [];
+        if (location.address) {
+          if (location.address.road) addressParts.push(location.address.road);
+          if (location.address.suburb)
+            addressParts.push(location.address.suburb);
+          if (location.address.city) addressParts.push(location.address.city);
+          if (location.address.country)
+            addressParts.push(location.address.country);
+        }
+
+        const popup = new maplibregl.Popup({
+          offset: 25,
+          closeButton: false,
+        }).setHTML(`
+    <div class="p-3 max-w-[240px] bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-600/40 shadow-xl">
+      <h3 class="font-semibold text-white text-sm mb-1">
+        ${location.name || location.display_name}
+      </h3>
+
+      <p class="text-[11px] text-slate-400 capitalize">
+        ${location.class ? location.class + " • " : ""}${location.type}
+      </p>
+
+      ${
+        addressParts.length > 0
+          ? `<p class="text-[10px] text-slate-500 mt-1">${addressParts.join(
+              ", "
+            )}</p>`
+          : ""
+      }
+
+      <p class="text-[10px] text-slate-500 mt-2 font-mono">
+        📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}
+      </p>
+    </div>
+`);
+
+        new maplibregl.Marker({
+          color: "#3B82F6",
+        })
           .setLngLat([location.lng, location.lat])
-          .setPopup(
-            new maplibregl.Popup().setHTML(
-              `<h3>${location.name}</h3><p>${location.type}</p>`
-            )
-          )
+          .setPopup(popup)
           .addTo(map.current);
 
         if (location.boundingBox?.length === 4) {

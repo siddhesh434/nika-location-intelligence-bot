@@ -3,9 +3,8 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState } from "react";
-import MarkerMap from "./components/MakerMap";
+import MarkerMap from "./components/MarkerMap";
 import PolygonMap from "./components/PolygonMap";
-import { latest } from "maplibre-gl";
 
 export default function Chat() {
   const [locations, setLocations] = useState([]);
