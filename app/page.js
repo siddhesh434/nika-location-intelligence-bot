@@ -9,24 +9,37 @@ export default function Chat() {
   const [locations, setLocations] = useState([]);
   const messagesEndRef = useRef(null);
   const [input, setInput] = useState("");
+  const [activeMessageId, setActiveMessageId] = useState(null);
 
   const { messages, sendMessage, isLoading } = useChat();
 
   useEffect(() => {
-    const allLocations = messages.flatMap(
-      (message) =>
-        message.parts
-          ?.filter((part) => part.type === "tool-searchLocation" && part.output)
-          .map((part) => part.output.locations || [])
-          .flat() || []
+    // Find the last message with locations
+    const messagesWithLocations = messages.filter((message) =>
+      message.parts?.some(
+        (part) => part.type === "tool-searchLocation" && part.output?.locations
+      )
     );
 
-    if (allLocations.length > 0) {
-      const newLocationsStr = JSON.stringify(allLocations);
-      const currentLocationsStr = JSON.stringify(locations);
+    if (messagesWithLocations.length > 0) {
+      const latestMessage =
+        messagesWithLocations[messagesWithLocations.length - 1];
+      const latestLocations =
+        latestMessage.parts
+          ?.filter(
+            (part) =>
+              part.type === "tool-searchLocation" && part.output?.locations
+          )
+          .flatMap((part) => part.output.locations || []) || [];
 
-      if (newLocationsStr !== currentLocationsStr) {
-        setLocations(allLocations);
+      if (latestLocations.length > 0) {
+        const newLocationsStr = JSON.stringify(latestLocations);
+        const currentLocationsStr = JSON.stringify(locations);
+
+        if (newLocationsStr !== currentLocationsStr) {
+          setLocations(latestLocations);
+          setActiveMessageId(latestMessage.id);
+        }
       }
     }
   }, [messages]);
@@ -45,6 +58,11 @@ export default function Chat() {
       sendMessage({ text: input });
       setInput("");
     }
+  };
+
+  const handleShowLocations = (messageId, messageLocations) => {
+    setLocations(messageLocations);
+    setActiveMessageId(messageId);
   };
 
   return (
@@ -109,6 +127,7 @@ export default function Chat() {
               </p>
 
               <div className="text-left space-y-3 max-w-sm mx-auto">
+                {/* Map Queries - WITH trigger words */}
                 <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-sm p-4 rounded-2xl border border-emerald-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
@@ -122,34 +141,74 @@ export default function Chat() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
                         />
                       </svg>
                     </div>
                     <p className="text-xs font-bold text-emerald-300 uppercase tracking-wide">
-                      Location Queries
+                      Map Queries (use trigger words)
                     </p>
                   </div>
                   <div className="text-xs text-slate-300 space-y-2">
                     <div className="flex items-start gap-2">
-                      <span className="text-emerald-400 mt-0.5">•</span>
-                      <span>Find cafes in Paris</span>
+                      <span className="text-emerald-400 mt-0.5 font-bold">
+                        •
+                      </span>
+                      <span>
+                        <span className="text-emerald-400 font-semibold">
+                          Find
+                        </span>{" "}
+                        cafes in Paris
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-emerald-400 mt-0.5">•</span>
-                      <span>Show me museums in Berlin</span>
+                      <span className="text-emerald-400 mt-0.5 font-bold">
+                        •
+                      </span>
+                      <span>
+                        <span className="text-emerald-400 font-semibold">
+                          Search
+                        </span>{" "}
+                        for restaurants in Tokyo
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-emerald-400 mt-0.5">•</span>
-                      <span>Where is the Eiffel Tower?</span>
+                      <span className="text-emerald-400 mt-0.5 font-bold">
+                        •
+                      </span>
+                      <span>
+                        <span className="text-emerald-400 font-semibold">
+                          Locate
+                        </span>{" "}
+                        the Eiffel Tower
+                      </span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-emerald-400 mt-0.5">•</span>
-                      <span>Restaurants near Times Square</span>
+                      <span className="text-emerald-400 mt-0.5 font-bold">
+                        •
+                      </span>
+                      <span>
+                        <span className="text-emerald-400 font-semibold">
+                          Show
+                        </span>{" "}
+                        me museums in Berlin
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-emerald-400 mt-0.5 font-bold">
+                        •
+                      </span>
+                      <span>
+                        <span className="text-emerald-400 font-semibold">
+                          Display
+                        </span>{" "}
+                        parks on the map
+                      </span>
                     </div>
                   </div>
                 </div>
 
+                {/* General Chat - WITHOUT trigger words */}
                 <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-sm p-4 rounded-2xl border border-cyan-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
@@ -168,22 +227,58 @@ export default function Chat() {
                       </svg>
                     </div>
                     <p className="text-xs font-bold text-cyan-300 uppercase tracking-wide">
-                      General Chat
+                      General Chat (no map)
                     </p>
                   </div>
                   <div className="text-xs text-slate-300 space-y-2">
                     <div className="flex items-start gap-2">
                       <span className="text-cyan-400 mt-0.5">•</span>
-                      <span>What should I do this weekend?</span>
+                      <span>Suggest tourist places in Indonesia</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-cyan-400 mt-0.5">•</span>
-                      <span>Tell me about French cuisine</span>
+                      <span>Where is Berlin?</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-cyan-400 mt-0.5">•</span>
-                      <span>How's the weather today?</span>
+                      <span>What are good restaurants in Paris?</span>
                     </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-cyan-400 mt-0.5">•</span>
+                      <span>Tell me about museums in London</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info box explaining the difference */}
+                <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm p-3 rounded-xl border border-amber-500/20">
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <p className="text-xs text-amber-200/90">
+                      <span className="font-semibold text-amber-300">
+                        Pro tip:
+                      </span>{" "}
+                      Use action words like{" "}
+                      <span className="text-amber-300 font-medium">find</span>,{" "}
+                      <span className="text-amber-300 font-medium">search</span>
+                      ,{" "}
+                      <span className="text-amber-300 font-medium">locate</span>
+                      , or{" "}
+                      <span className="text-amber-300 font-medium">show</span>{" "}
+                      to see results on the map!
+                    </p>
                   </div>
                 </div>
               </div>
@@ -216,6 +311,9 @@ export default function Chat() {
                         </div>
                       );
                     case "tool-searchLocation":
+                      const messageLocations = part.output?.locations || [];
+                      const isActive = activeMessageId === message.id;
+
                       return (
                         <div
                           key={`${message.id}-${i}`}
@@ -237,10 +335,10 @@ export default function Chat() {
                                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                                   />
                                 </svg>
-                                <span>Search error: {part.result.error}</span>
+                                <span>Search error: {part.output.error}</span>
                               </div>
                             ) : (
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-slate-400">
                                   <svg
                                     className="w-4 h-4 text-emerald-400"
@@ -264,6 +362,40 @@ export default function Chat() {
                                   <div className="text-slate-500 italic ml-6">
                                     "{part.output.query}"
                                   </div>
+                                )}
+                                {messageLocations.length > 0 && (
+                                  <button
+                                    onClick={() =>
+                                      handleShowLocations(
+                                        message.id,
+                                        messageLocations
+                                      )
+                                    }
+                                    className={`ml-6 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                      isActive
+                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                        : "bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <svg
+                                        className="w-3.5 h-3.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                                        />
+                                      </svg>
+                                      {isActive
+                                        ? "Showing on map"
+                                        : "Show on map"}
+                                    </div>
+                                  </button>
                                 )}
                               </div>
                             )}
