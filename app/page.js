@@ -3,13 +3,15 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef, useState } from "react";
-import Map from "./components/Map";
+import MarkerMap from "./components/MakerMap";
+import PolygonMap from "./components/PolygonMap";
 
 export default function Chat() {
   const [locations, setLocations] = useState([]);
   const messagesEndRef = useRef(null);
   const [input, setInput] = useState("");
   const [activeMessageId, setActiveMessageId] = useState(null);
+  const [viewMode, setViewMode] = useState({});
 
   const { messages, sendMessage, isLoading } = useChat();
 
@@ -63,6 +65,23 @@ export default function Chat() {
   const handleShowLocations = (messageId, messageLocations) => {
     setLocations(messageLocations);
     setActiveMessageId(messageId);
+    // Initialize view mode for this message if not set
+    if (!viewMode[messageId]) {
+      setViewMode((prev) => ({ ...prev, [messageId]: "marker" }));
+    }
+  };
+
+  const handleToggleView = (messageId, currentMode) => {
+    setViewMode((prev) => ({
+      ...prev,
+      [messageId]: currentMode === "marker" ? "polygon" : "marker",
+    }));
+  };
+
+  // Helper function to check if location has actual polygon geometry
+  const hasPolygonGeometry = (location) => {
+    const geoData = location.polygon;
+    return geoData && geoData.type === "Polygon";
   };
 
   return (
@@ -313,6 +332,17 @@ export default function Chat() {
                     case "tool-searchLocation":
                       const messageLocations = part.output?.locations || [];
                       const isActive = activeMessageId === message.id;
+                      const currentViewMode = viewMode[message.id] || "marker";
+
+                      // Check if it's a single location with polygon geometry
+                      const isSingleLocation = messageLocations.length === 1;
+                      const hasPolygon =
+                        isSingleLocation &&
+                        hasPolygonGeometry(messageLocations[0]);
+
+                      console.log(
+                        `Message ${message.id} - hasPolygon: ${hasPolygon}`
+                      );
 
                       return (
                         <div
@@ -364,44 +394,103 @@ export default function Chat() {
                                   </div>
                                 )}
                                 {messageLocations.length > 0 && (
-                                  <button
-                                    onClick={() =>
-                                      handleShowLocations(
-                                        message.id,
-                                        messageLocations
-                                      )
-                                    }
-                                    className={`ml-6 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                      isActive
-                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                                        : "bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-1.5">
-                                      <svg
-                                        className="w-3.5 h-3.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
+                                  <div className="ml-6 mt-2 flex items-center gap-2">
+                                    <button
+                                      onClick={() =>
+                                        handleShowLocations(
+                                          message.id,
+                                          messageLocations
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        isActive
+                                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                          : "bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-1.5">
+                                        <svg
+                                          className="w-3.5 h-3.5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                                          />
+                                        </svg>
+                                        {isActive
+                                          ? "Showing on map"
+                                          : "Show on map"}
+                                      </div>
+                                    </button>
+
+                                    {/* Toggle button - only show for single location with polygon geometry */}
+                                    {hasPolygon && isActive && (
+                                      <button
+                                        onClick={() =>
+                                          handleToggleView(
+                                            message.id,
+                                            currentViewMode
+                                          )
+                                        }
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all"
+                                        title={
+                                          currentViewMode === "marker"
+                                            ? "Show as polygon"
+                                            : "Show as marker"
+                                        }
                                       >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                                        />
-                                      </svg>
-                                      {isActive
-                                        ? "Showing on map"
-                                        : "Show on map"}
-                                    </div>
-                                  </button>
+                                        <div className="flex items-center gap-1.5">
+                                          {currentViewMode === "marker" ? (
+                                            <>
+                                              <svg
+                                                className="w-3.5 h-3.5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                                                />
+                                              </svg>
+                                              Polygon
+                                            </>
+                                          ) : (
+                                            <>
+                                              <svg
+                                                className="w-3.5 h-3.5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                                />
+                                              </svg>
+                                              Marker
+                                            </>
+                                          )}
+                                        </div>
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
                           </div>
                         </div>
                       );
+
                     default:
                       return null;
                   }
@@ -446,41 +535,7 @@ export default function Chat() {
               disabled={isLoading || !input?.trim()}
               className="px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed transition-all font-semibold text-sm shadow-lg shadow-emerald-500/20 disabled:shadow-none"
             >
-              {isLoading ? (
-                <svg
-                  className="w-5 h-5 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              ) : (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  />
-                </svg>
-              )}
+              Send
             </button>
           </form>
           <div className="text-xs text-slate-500 mt-3 text-center flex items-center justify-center gap-2">
@@ -504,7 +559,11 @@ export default function Chat() {
 
       {/* Map Panel */}
       <div className="w-2/3 relative">
-        <Map locations={locations} />
+        {viewMode[activeMessageId] === "polygon" ? (
+          <PolygonMap locations={locations} />
+        ) : (
+          <MarkerMap locations={locations} />
+        )}
       </div>
     </div>
   );

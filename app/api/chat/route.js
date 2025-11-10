@@ -245,6 +245,7 @@ PARAMETER USAGE (when tool is triggered):
                 "User-Agent": "NikaLocationBot/1.0",
               },
             });
+            console.log(url);
 
             if (!response.ok) {
               throw new Error(`API error: ${response.status}`);
