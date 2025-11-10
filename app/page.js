@@ -178,7 +178,7 @@ export default function Chat() {
                         <span className="text-emerald-400 font-semibold">
                           Find
                         </span>{" "}
-                        cafes in Paris
+                        Singapore on map
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
@@ -211,7 +211,7 @@ export default function Chat() {
                         <span className="text-emerald-400 font-semibold">
                           Show
                         </span>{" "}
-                        me museums in Berlin
+                        me Berlin on map
                       </span>
                     </div>
                     <div className="flex items-start gap-2">
@@ -222,7 +222,7 @@ export default function Chat() {
                         <span className="text-emerald-400 font-semibold">
                           Display
                         </span>{" "}
-                        parks on the map
+                        Sentosa Island on the map
                       </span>
                     </div>
                   </div>
