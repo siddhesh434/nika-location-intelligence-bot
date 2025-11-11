@@ -81,7 +81,9 @@ export default function Chat() {
   // Helper function to check if location has actual polygon geometry
   const hasPolygonGeometry = (location) => {
     const geoData = location.polygon;
-    return geoData && geoData.type === "Polygon";
+    return (
+      geoData && (geoData.type === "Polygon" || geoData.type === "MultiPolygon")
+    );
   };
 
   return (
